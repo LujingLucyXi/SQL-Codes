@@ -1,0 +1,83 @@
+SELECT CONCAT (first_name, ' ', last_name) AS Full_Name, 
+LENGTH(CONCAT (first_name, ' ', last_name)) AS Length
+FROM actor
+ORDER BY Length DESC;
+
+SELECT CONCAT (Left(first_name, 1), 
+LOWER(RIGHT(first_name, LENGTH(first_name)-1))) 
+AS FirstName 
+FROM actor 
+ORDER BY FirstName;
+
+SELECT SUBSTRING(first_name, 1,2) FROM actor;
+
+SELECT SUBSTRING(last_name, 2) FROM actor;
+
+SELECT SUBSTRING(first_name, -4) FROM actor;
+
+SELECT CONCAT(SUBSTRING(first_name, 1,1), LOWER(SUBSTRING(first_name,2)))
+AS FirstName
+FROM actor
+ORDER By FirstName;
+
+SELECT * FROM actor
+WHERE TRIM(first_name) = 'GRACE';
+
+SELECT description as original, TRIM(LEADING 'A' FROM description) as modified
+FROM Film_text; 
+
+
+SELECT *
+FROM address
+WHERE YEAR(last_update) = 2008;
+
+SELECT *
+FROM address
+WHERE EXTRACT (YEAR FROM last_update) = 2008;
+
+SELECT *
+FROM address
+WHERE YEAR_MONTH(last_update) = 2008-5;
+
+SELECT *
+FROM address
+WHERE DATE(last_update) = '2009-5-11';
+
+SELECT DATE_FORMAT(last_update, '%m-%d-%Y')
+FROM address;
+
+SELECT COUNT(*)
+FROM address;
+
+
+SELECT district, count(*) AS count
+FROM address
+GROUP BY district
+ORDER BY count desc;
+
+（GROUP BY 和 Having一起用而不是Where）
+
+SELECT district, count(*) AS count 
+FROM address 
+WHERE district LIKE '%L%' GROUP BY district 
+HAVING count>4 
+ORDER BY count desc;
+
+
+
+SELECT rating,
+MIN(rental_duration) AS Min,
+MAX(rental_duration) AS Max,
+AVG(rental_duration) AS AVG,
+SUM(rental_duration) AS SUM
+FROM film
+GROUP BY rating;
+
+
+
+
+
+
+
+
+
