@@ -74,6 +74,35 @@ FROM film
 GROUP BY rating;
 
 
+SELECT DISTINCT district, address
+FROM address
+ORDER BY district;
+
+SELECT DISTINCT CONCAT (customer_id, '_', inventory_id) AS conc, 
+count(*) as ct
+FROM rental
+GROUP BY conc
+ORDER BY ct DESC;
+
+SELECT DISTINCT YEAR(last_update) 
+FROM address; 
+
+SELECT COUNT(DISTINCT district)
+FROM address; 
+
+SELECT district, 
+GROUP_CONCAT(phone ORDER BY phone ASC SEPARATOR ';') 
+AS Phone_List 
+FROM address 
+GROUP BY district;
+
+
+
+
+
+
+
+
 
 
 
