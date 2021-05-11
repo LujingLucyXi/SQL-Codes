@@ -1,0 +1,74 @@
+-- Calculation for user retention (the percentage of users that views the page exact 7 days from the first visit)
+
+SELECT a.first_visit::date,
+COUNT(a.user_id) AS first_visit_users,
+COUNT(DISTINCT b.user_id) AS returned_users,
+100.0 * COUNT(DISTINCT b.user_id) / COUNT(a.user_id) AS day_7_retention
+FROM
+(
+SELECT user_id,
+MIN(pv_ts) AS first_visit
+FROM page_views
+WHERE url ILIKE '%credit-dashboard%'
+GROUP BY 1
+) a
+LEFT JOIN page_views b
+ON a.user_id = b.user_id
+AND b.pv_ts::date = DATEADD('day', a.pv_ts::date, 7)
+WHERE b.url ILIKE '%credit-dashboard%'
+GROUP BY 1
+;
+
+
+
+
+
+
+/*
+Sessions table
+
+page_view_dt, session_id, user_id, campaign_id
+('2018-01-01', 'a', 101, 'c1'),
+('2018-01-03', 'b', 101, 'c2'),
+('2018-01-04', 'c', 101, NULL),
+('2018-01-08', 'd', 101, NULL),
+('2018-01-15', 'e', 101, 'c3'),
+('2018-01-24', 'f', 101, NULL)
+*/
+
+-- Write a query that attributes sessions to marketing campaigns
+-- If a session doesn't have a campaign, it will be attributed to the most recent campaign in the last 7 days
+-- If the last campaign was greater then 7 days ago, it will be considered an organic session
+
+
+-- Query for sessions that have a campaign
+SELECT page_view_dt,
+user_id,
+session_id,
+campaign_id
+FROM dw_workarea.sel_sql_session_attribution
+WHERE campaign_id IS NOT NULL
+
+UNION ALL
+
+-- Query for sessions that don't have a campaign
+SELECT page_view_dt,
+user_id,
+session_id,
+campaign_attribution
+FROM
+(
+SELECT a.page_view_dt,
+a.user_id,
+a.session_id,
+b.campaign_id AS campaign_attribution,
+RANK() OVER (PARTITION BY a.session_id ORDER BY b.page_view_dt DESC) AS session_rank
+FROM sessions a
+LEFT JOIN sessions b
+ON a.user_id = b.user_id
+AND a.page_view_dt BETWEEN b.page_view_dt AND b.page_view_dt + 7
+WHERE a.campaign_id IS NULL
+AND b.campaign_id IS NOT NULL
+)
+WHERE session_rank = 1
+;
