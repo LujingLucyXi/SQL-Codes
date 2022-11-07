@@ -1,0 +1,47 @@
+SET start_dt = "   "
+SET latest_day = (select case when (celi)day(current_date)/7)) * 7 > 28 then '28' else case ((celi(day(current_date)/7))*7 as varchar) end);
+SET latest_data_week = date(concat(cast(year(current_date) as varchar), '-', cast(month(current_date) as varchar), '-', $latest_day));
+SET end_dt_month = case when day(current_date)>28 then $latest_data_week else last_day(dateadd(month, -1, current_date), month) end; 
+
+Create temp table driver as (
+    SELECT stmt_end_dt,
+           identifier($nxt_stmt_field),
+           CASE WHEN day(stmt_end_dt) between 1 and 7 then datesfromoparts(year(stmt_end_dt), month(stmt_end_dt), 7)
+                WHEN day(stmt_end_dt) between 8 and 14 then datesfromoparts(year(stmt_end_dt), month(stmt_end_dt), 14)
+                WHEN day(stmt_end_dt) between 15 and 21 then datesfromoparts(year(stmt_end_dt), month(stmt_end_dt), 21)
+                else datefromparts(year(stmt_end_dt), month(stmt_end_dt), 28)
+ end as batch_week,
+            
+            CASE WHEN day(identifier($nxt_stmt_field)） between 1 and 7 then datesfromoparts(year(identifier($nxt_stmt_field)), month(identifier($nxt_stmt_field)), 7)
+                WHEN day(identifier($nxt_stmt_field)） between 8 and 14 then datesfromoparts(year(identifier($nxt_stmt_field)), month(identifier($nxt_stmt_field)), 14）
+                WHEN day(identifier($nxt_stmt_field)） between 15 and 21 then datesfromoparts(year(identifier($nxt_stmt_field)), month(identifier($nxt_stmt_field)), 21)
+                else datefromparts(year(identifier($nxt_stmt_field)), month(identifier($nxt_stmt_field)), 28)
+                
+    end as data_date_week,
+    datefromparts (year(stmt_end_dt), month(stmt_end_dt), 28) as batch_month,
+    datefromparts(year(identifier($nxt_stmt_field)), month(identifier($nxt_stmt_field)), 28) as data_date_month,
+    entry_bal_bkt,
+    age_bkt,
+    skip_pay_ind,
+    transaction_ind,
+    fico_bkt,
+    sum (case when curr_bkt = $curr_bkt and identifier($nxt_bkt_field) = $nxt_bkt and identifier($nxt_clsd_reas_cd) in ('*2', 'V4', 'V5') and identifier($nxt_chrgof_ind）=0 
+    then identifier($dol_roll_var) else 0 end) as dol_roll,
+    
+    sum(case when curr_bkt = $curr+bkt and clsd_reas_cd in ('*2', 'V4', 'V5')  and chrgof_ind=0
+    then identifier($dol_base_var_ else 0 end) as dol_base, 
+    
+    sum(case when curr_bkt = $curr_bkt and identifier($nxt_bkt_field) =  $nxt_bkt and identifier($nxt_clsd_reas_cd) in ('*2', 'V4', 'V5') and identifier($nxt_chrgof_ind）=0
+    then 1 else 0 end) as vol_roll,
+    
+    sum(case when curr_bkt = $curr+bkt and clsd_reas_cd in ('*2', 'V4', 'V5')  and chrgof_ind=0
+    then 1 else 0 end) as vol_base
+    
+    FROM (select * FROM db.lab_cust.stmt where curr_bkt = $curr_bkt)
+    WHERE identifier ($nxt_stmt_field) between $start_dt and $end_dt_week
+        and clst_reas_cd in ('*2', 'V4', 'V5')
+        and chrgof_ind = 0
+       
+     GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14
+     ）；
+    
