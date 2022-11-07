@@ -1,0 +1,71 @@
+Set delta_dt = current_dt
+
+CREATE or REPLACE temp table db.product.accts as (
+SELECT acct_id, svs_cd
+FROM db_proc.prod_customer.care
+GROUP BY 1,2
+);
+
+CREATE or REPLACE temp table db.product.cust_detail as (
+SELECT acct_id,cust_id, cust_sor_id, min(snap_dt) as app_join_dt
+FROM db.cust.login lgn
+WHERE lgn.cust_activity_type = 'LOGN'
+    AND lgn.acct_id in (select acct_id from db.product.accts group by 1_
+    AND lgn.snap_dt <= $delta_dt
+   GROUP BY acct_id,cust_id, cust_sor_id
+ ); 
+ 
+CREATE or REPLACE temp table db.product.cust_end_dt as (
+SELECT*, row_number () over (partition by acct_id, cust_sor_id order by app_join_dt) as rno,
+ (lead(app_join_dt, 1) over (partition by acct_id, cust_sor_id order by app_join_dt) -1 as end_snap_dt
+FROM temp table db.product.cust_detail
+）；
+
+INSERT into cust_app_eligib
+SELECT
+ dq.acct_id
+,lgn.cust_sor_id
+,sor_id
+,svc_cd
+,null as cust_id_strt_dt
+,null as cust_id_end_dt
+,case when lgn. cust_sor_id is not null then 1 else 0 end as cust_sso_id
+$delta_dt as last_updated_dt
+FROM )select acct_id, svc_cd FROM db.product.dq_accts grou by 1,2) dq
+LEFT JOIN 
+   (SELECT acct_id, cust_sor_id
+    FROM db.cust.login lgn
+    WHERE snap+dt = $delta_dt
+    AND lgn.cust_activity_type = 'LOGN'
+    AND cust_sor_id is not null
+    ) lgn
+ON dq.acct_id = lgn.acct_id
+WHERE 
+not exists
+        (select 1 FROM cust_app_eligib a
+         where a.acct_id = dq.acct_id
+          and coalesce(a.scv_cd, 0) = coalesce(dq.svc_cd, 0)
+          and coalesce(a.cust_sor_id, 0) = coalesce(lgn.cust_sor_id, 0)
+          and coalesce(a.cust_id, ' ') = coalesce(lgn.cust_id, ' ')
+        )
+GROUP BY 1,2,3,4,5,6,7,8,9
+
+
+
+UPDATE cust_app_eligib AE
+SET AE. app_join_dt = lgn.cust_app_eligib,
+    AE. cust_end_dt = lgn.cust_end_dt,
+    AE.last_updated_dt = $delta_dt
+FROM db.product.cust_end_dt lgn
+WHERE AE.acct_id = lgn.acct_id
+  AND AE.cust_sor_id = lgn. cust_sor_id
+  AND AE.cust_id = lgn.cust_id; 
+  
+
+
+DELETE
+FROM cust_app_eligib AE
+WHERE cust_ind = ‘FALSE’
+AND exists (select 1 FROM cust_app_eligib a
+            where a.acct_id = AE.acct_id
+            AND a. cust_ind = 'TRUE');
